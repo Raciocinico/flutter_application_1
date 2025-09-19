@@ -1,0 +1,58 @@
+name: namer_app
+description: A new Flutter project.
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 0.0.1+1
+
+environment:
+  sdk: '>=2.19.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  geolocator: ^10.1.0   # Para obtener la ubicación
+  geocoding: ^2.1.0     # Para convertir coordenadas en ciudad
+  intl: ^0.18.0 
+  flutter_typeahead: ^4.3.7
+  flutter_secure_storage: ^9.0.0
+  toggle_switch: ^2.3.0
+  http: 1.3.0
+  image_picker: ^1.0.4
+  cloud_firestore: ^5.6.5
+  firebase_auth: ^5.5.1
+  firebase_core: ^3.12.1
+  firebase_messaging: ^15.2.4
+  flutter_local_notifications: ^19.0.0
+  english_words: ^4.0.0
+  google_sign_in: ^6.3.0
+  google_sign_in_ios: ^5.8.1
+  provider: ^6.1.2
+  url_launcher: ^6.2.5
+  shelf: ^1.4.0
+  shelf_router: ^1.1.3
+  sign_in_with_apple: ^5.0.0
+  font_awesome_flutter: ^10.8.0
+  flutter_svg:  ^2.1.0
+  curved_navigation_bar: ^1.0.6
+  cupertino_icons: ^1.0.8
+  emoji_picker_flutter: ^4.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.3.10  # Agrega esta línea aquí
+ 
+
+flutter_native_splash:
+  color: "#252516"  # Color de fondo para el splash screen
+  image: assets/images/Logo.png  # Ruta de la imagen de tu splash screen
+  android: true
+  ios: true
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/cities.json

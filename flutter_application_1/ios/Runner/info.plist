@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict><key>GIDClientID</key>
+<!-- TODO Replace this value: -->
+<!-- Copied from GoogleService-Info.plist key CLIENT_ID -->
+<string>[922951008028-q0ibvstk5sftsnn3nscofft2oss2ca8o.apps.googleusercontent.com]</string>
+<!-- Put me in the [my_project]/ios/Runner/Info.plist file -->
+<!-- Google Sign-in Section -->
+<key>CFBundleURLTypes</key>
+<array>
+	<dict>
+		<key>CFBundleTypeRole</key>
+		<string>Editor</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+			<!-- TODO Replace this value: -->
+			<!-- Copied from GoogleService-Info.plist key REVERSED_CLIENT_ID -->
+			<string>com.googleusercontent.apps.922951008028-q0ibvstk5sftsnn3nscofft2oss2ca8</string>
+		</array>
+	</dict>
+</array>
+<!-- End of the Google Sign-in Section -->
+    <!-- Información básica -->
+    <key>CFBundleDisplayName</key>
+    <string>My App</string>
+    <key>CFBundleName</key>
+    <string>My App</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.mycompany.myapp</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Necesitamos acceso a tu galería para cambiar la foto de perfil.</string>
+
+    <!-- Configuración técnica -->
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>iPhoneOS</string>
+    </array>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- Requisitos del sistema -->
+    <key>MinimumOSVersion</key>
+    <string>12.0</string>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer> <!-- iPhone -->
+        <integer>2</integer> <!-- iPad -->
+    </array>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>arm64</string>
+    </array>
+
+    <!-- Pantalla de lanzamiento -->
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+
+    <!-- Orientaciones soportadas -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- Icono de la app (para Xcode) -->
+    <key>CFBundleIcons</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconFiles</key>
+            <array>
+                <string>AppIcon</string>
+            </array>
+            <key>UIPrerenderedIcon</key>
+            <false/>
+        </dict>
+    </dict>
+
+    <!-- Permisos comunes (solo si los necesitas, descomenta) -->
+    <!--
+    <key>NSCameraUsageDescription</key>
+    <string>We need access to your camera to take photos.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to your photo library to select images.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Location is needed for nearby features.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We need access to your microphone to record audio.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Bluetooth access is needed for device connection.</string>
+    -->
+
+    <!-- Si usás deep linking -->
+    <!--
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>myapp</string>
+            </array>
+        </dict>
+    </array>
+    -->
+
+    <!-- Si usás background modes -->
+    <!--
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    -->
+
+    <!-- Seguridad de red (si usás HTTP en lugar de HTTPS) -->
+    <!--
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+    -->
+</dict>
+</plist>

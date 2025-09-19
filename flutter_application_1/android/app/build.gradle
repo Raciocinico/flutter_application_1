@@ -1,0 +1,56 @@
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services") // <-- Ya incluido aquí
+}
+
+android {
+    namespace = "com.example.flutter_application_1"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled true // 👈 Esta línea habilita el desugaring
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11.toString()
+    }
+
+    defaultConfig {
+        applicationId = "com.example.flutter_application_1"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+        minSdkVersion 23 
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    // ✅ Firebase BoM (maneja versiones por ti)
+    implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
+
+    // 🔐 Firebase Authentication (para Google Sign-In)
+    implementation("com.google.firebase:firebase-auth")
+
+    // 📊 Firebase Analytics (opcional)
+    implementation("com.google.firebase:firebase-analytics")
+
+    implementation 'com.google.android.gms:play-services-auth:19.2.0'
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4' // 👈 Esta línea
+}

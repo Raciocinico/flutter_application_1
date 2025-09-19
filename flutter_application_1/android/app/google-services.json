@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "922951008028",
+    "project_id": "appastra-f2ada",
+    "storage_bucket": "appastra-f2ada.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:922951008028:android:bd5566f249067e4ae0c4d9",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "922951008028-2hsn3nhciqcq2bqu8hqueag6mfarfst2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_application_1",
+            "certificate_hash": "ad35156ccd3028a371ad9fc45660415d29387f12"
+          }
+        },
+        {
+          "client_id": "922951008028-msa8jdhjrvhm23l7qrumvhia1ajrivdv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATrg50aBRTHCXB3MY2l3cZeqzpthCCOqQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "922951008028-msa8jdhjrvhm23l7qrumvhia1ajrivdv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "922951008028-q0ibvstk5sftsnn3nscofft2oss2ca8o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "appastra-f2ada"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
