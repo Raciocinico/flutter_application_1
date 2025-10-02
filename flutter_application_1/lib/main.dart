@@ -1926,15 +1926,26 @@ class Thread {
 class _ProfilePageState extends State<Profilepage> {
   File? _profileImage;
   File? _coverImage;
-  File? _videoFile;
   final ImagePicker _picker = ImagePicker();
   final List<File> _videos = [];
-  int selectedTab = 0; // 0=Threads,1=Photos,2=Videos
-  List<Thread> threads = [];
   List<File> _photos = [];
+  int selectedTab = 0; // 0=Threads, 1=Photos, 2=Videos
+  List<Thread> threads = [];
 
   TextEditingController threadController = TextEditingController();
   Timer? _timer;
+
+  // 🔹 Tutorial state
+  int _currentStep = 0;
+  OverlayEntry? _tutorialOverlay;
+
+  // Lista de pasos del tutorial
+  final List<Map<String, String>> tutorialSteps = [
+    {"title": "Crear Thread", "desc": "Escribe y publica tu primer Thread."},
+    {"title": "Subir Foto", "desc": "Agrega una foto a tu perfil."},
+    {"title": "Subir Video", "desc": "Sube un video desde tu galería."},
+    {"title": "Perfil", "desc": "Selecciona y actualiza tu foto de perfil."},
+  ];
 
   // Formato de tiempo relativo
   String timeAgo(DateTime date) {
@@ -1951,48 +1962,106 @@ class _ProfilePageState extends State<Profilepage> {
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       setState(() {}); // refrescar "time ago"
     });
+    Future.delayed(const Duration(milliseconds: 500), _startTutorial);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     threadController.dispose();
+    _removeTutorial();
     super.dispose();
   }
 
+  // Tutorial functions
+  void _startTutorial() {
+    _currentStep = 0;
+    _showStep();
+  }
+
+  void _nextStep() {
+    _removeTutorial();
+    if (_currentStep < tutorialSteps.length - 1) {
+      _currentStep++;
+      _showStep();
+    }
+  }
+
+  void _removeTutorial() {
+    _tutorialOverlay?.remove();
+    _tutorialOverlay = null;
+  }
+
+  void _showStep() {
+    _tutorialOverlay = OverlayEntry(
+      builder: (context) {
+        return Positioned.fill(
+          child: Material(
+            color: Colors.black54,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                margin: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      tutorialSteps[_currentStep]["title"]!,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(tutorialSteps[_currentStep]["desc"]!),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _nextStep,
+                      child: Text(
+                          _currentStep == tutorialSteps.length - 1
+                              ? "Finalizar"
+                              : "Siguiente",
+                          style: const TextStyle(fontSize: 16)),
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    Overlay.of(context).insert(_tutorialOverlay!);
+  }
+
+  // Pickers
   Future<void> _pickProfileImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _profileImage = File(pickedFile.path);
-      });
+      setState(() => _profileImage = File(pickedFile.path));
     }
   }
 
   Future<void> _pickCoverImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _coverImage = File(pickedFile.path);
-      });
+      setState(() => _coverImage = File(pickedFile.path));
     }
   }
 
   Future<void> _pickPhoto() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _photos.add(File(pickedFile.path));
-      });
+      setState(() => _photos.insert(0, File(pickedFile.path)));
     }
   }
 
   Future<void> _pickVideo() async {
     final pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() {
-        _videos.add(File(pickedFile.path));
-      });
+      setState(() => _videos.add(File(pickedFile.path)));
     }
   }
 
@@ -2047,11 +2116,7 @@ class _ProfilePageState extends State<Profilepage> {
             children: [
               Expanded(
                 child: TextField(
-                  style: const TextStyle(
-                    color: Colors
-                        .white, // 👈 color del texto que el usuario escribe
-                    fontSize: 16,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                   controller: threadController,
                   decoration: const InputDecoration(
                     hintText: "Write a new thread...",
@@ -2067,7 +2132,7 @@ class _ProfilePageState extends State<Profilepage> {
           ),
         ),
         ListView.builder(
-          shrinkWrap: true, // 👈 permite funcionar dentro del scroll general
+          shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: threads.length,
           itemBuilder: (context, index) {
@@ -2147,10 +2212,8 @@ class _ProfilePageState extends State<Profilepage> {
         ),
         const SizedBox(height: 10),
         _photos.isEmpty
-            ? const Text(
-                "No hay fotos aún",
-                style: TextStyle(color: Colors.white70),
-              )
+            ? const Text("No hay fotos aún",
+                style: TextStyle(color: Colors.white70))
             : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -2175,218 +2238,230 @@ class _ProfilePageState extends State<Profilepage> {
   }
 
   Widget _buildVideosTab() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 4,
-      itemBuilder: (context, index) => Container(
-        margin: const EdgeInsets.all(8),
-        height: 220,
-        color: Colors.black26,
-        child: const Center(
-          child: Icon(Icons.play_circle_fill, size: 100, color: Colors.white70),
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          onPressed: _pickVideo,
+          label: const Text("+"),
         ),
-      ),
+        const SizedBox(height: 10),
+        _videos.isEmpty
+            ? const Text("No hay videos aún",
+                style: TextStyle(color: Colors.white70))
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _videos.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.all(8),
+                    height: 220,
+                    color: Colors.black26,
+                    child: const Center(
+                      child: Icon(Icons.play_circle_fill,
+                          size: 100, color: Colors.white70),
+                    ),
+                  );
+                },
+              ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        extendBody: true,
-        body: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/BaseBackground.png'),
-              fit: BoxFit.cover,
-            ),
+    return Scaffold(
+      extendBody: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/BaseBackground.png'),
+            fit: BoxFit.cover,
           ),
-          child: NestedScrollView(
-            floatHeaderSlivers: true,
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              const SliverAppBar(
-                floating: true,
-                snap: true,
-                title: Text("ישוע"),
-                centerTitle: true,
-                actions: [
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 25),
-                    child: Icon(Icons.account_circle_rounded,
-                        color: Color.fromRGBO(255, 239, 227, 1)),
-                  ),
-                ],
-                backgroundColor: Color.fromRGBO(37, 21, 22, 1),
-                titleTextStyle: TextStyle(
-                  color: Color.fromRGBO(255, 239, 227, 0.7),
-                  fontWeight: FontWeight.bold,
+        ),
+        child: NestedScrollView(
+          floatHeaderSlivers: true,
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            const SliverAppBar(
+              floating: true,
+              snap: true,
+              title: Text("ישוע"),
+              centerTitle: true,
+              actions: [
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 25),
+                  child: Icon(Icons.account_circle_rounded,
+                      color: Color.fromRGBO(255, 239, 227, 1)),
                 ),
+              ],
+              backgroundColor: Color.fromRGBO(37, 21, 22, 1),
+              titleTextStyle: TextStyle(
+                color: Color.fromRGBO(255, 239, 227, 0.7),
+                fontWeight: FontWeight.bold,
               ),
-            ],
-            body: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.topCenter,
-              children: [
-                // Portada
-                Positioned(
-                  right: 0,
-                  left: 0,
-                  top: 0,
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 340,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: const Color.fromRGBO(7, 7, 7, 1),
-                          image: _coverImage != null
-                              ? DecorationImage(
-                                  image: FileImage(_coverImage!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: _coverImage == null
-                            ? const Center(
-                                child: Icon(Icons.photo,
-                                    size: 80, color: Colors.white30),
+            ),
+          ],
+          body: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              // Portada
+              Positioned(
+                right: 0,
+                left: 0,
+                top: 0,
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 340,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(7, 7, 7, 1),
+                        image: _coverImage != null
+                            ? DecorationImage(
+                                image: FileImage(_coverImage!),
+                                fit: BoxFit.cover,
                               )
                             : null,
                       ),
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Material(
-                          color: Colors.black45,
-                          shape: const CircleBorder(),
-                          child: IconButton(
-                            tooltip: 'Cambiar portada',
-                            icon: const Icon(Icons.camera_alt,
-                                color: Colors.white),
-                            onPressed: _pickCoverImage,
-                          ),
+                      child: _coverImage == null
+                          ? const Center(
+                              child: Icon(Icons.photo,
+                                  size: 80, color: Colors.white30),
+                            )
+                          : null,
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Material(
+                        color: Colors.black45,
+                        shape: const CircleBorder(),
+                        child: IconButton(
+                          tooltip: 'Cambiar portada',
+                          icon:
+                              const Icon(Icons.camera_alt, color: Colors.white),
+                          onPressed: _pickCoverImage,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                // Tarjeta vinotinto con scroll
-                Positioned(
-                  top: 250,
-                  right: 0,
-                  left: 0,
-                  child: Container(
-                    height: 290, // 👈 altura dinámica
-                    margin: const EdgeInsets.symmetric(horizontal: 25),
-                    padding: const EdgeInsets.all(15),
-                    decoration: const BoxDecoration(
-                      color: Color.fromRGBO(37, 21, 22, 1),
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 20),
-                          GestureDetector(
-                            onTap: _pickProfileImage,
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade800,
-                              backgroundImage: _profileImage != null
-                                  ? FileImage(_profileImage!)
-                                  : null,
-                              child: _profileImage == null
-                                  ? const Icon(Icons.person,
-                                      size: 50, color: Colors.white70)
-                                  : null,
+                  ],
+                ),
+              ),
+              // Tarjeta vinotinto con scroll
+              Positioned(
+                top: 250,
+                right: 0,
+                left: 0,
+                child: Container(
+                  height: 290,
+                  margin: const EdgeInsets.symmetric(horizontal: 25),
+                  padding: const EdgeInsets.all(15),
+                  decoration: const BoxDecoration(
+                    color: Color.fromRGBO(37, 21, 22, 1),
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: _pickProfileImage,
+                          child: CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey.shade800,
+                            backgroundImage: _profileImage != null
+                                ? FileImage(_profileImage!)
+                                : null,
+                            child: _profileImage == null
+                                ? const Icon(Icons.person,
+                                    size: 50, color: Colors.white70)
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text("Edward Kenway",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18)),
+                        const SizedBox(height: 5),
+                        const Text("Saggitarius, Escorpios, Cancer",
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 14)),
+                        const SizedBox(height: 5),
+                        const Text("Professional Looter",
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 14)),
+                        const SizedBox(height: 20),
+
+                        // Menú manual
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            GestureDetector(
+                              onTap: () => setState(() => selectedTab = 0),
+                              child: Text("Threads",
+                                  style: TextStyle(
+                                      color: selectedTab == 0
+                                          ? Colors.white
+                                          : Colors.white54,
+                                      fontWeight: FontWeight.bold)),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text("Edward Kenway",
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18)),
-                          const SizedBox(height: 5),
-                          const Text("Saggitarius, Escorpios, Cancer",
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 14)),
-                          const SizedBox(height: 5),
-                          const Text("Professional Looter",
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 14)),
-                          const SizedBox(height: 20),
+                            GestureDetector(
+                              onTap: () => setState(() => selectedTab = 1),
+                              child: Text("Photos",
+                                  style: TextStyle(
+                                      color: selectedTab == 1
+                                          ? Colors.white
+                                          : Colors.white54,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            GestureDetector(
+                              onTap: () => setState(() => selectedTab = 2),
+                              child: Text("Videos",
+                                  style: TextStyle(
+                                      color: selectedTab == 2
+                                          ? Colors.white
+                                          : Colors.white54,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
 
-                          // Menú
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              GestureDetector(
-                                onTap: () => setState(() => selectedTab = 0),
-                                child: Text("Threads",
-                                    style: TextStyle(
-                                        color: selectedTab == 0
-                                            ? Colors.white
-                                            : Colors.white54,
-                                        fontWeight: FontWeight.bold)),
-                              ),
-                              GestureDetector(
-                                onTap: () => setState(() => selectedTab = 1),
-                                child: Text("Photos",
-                                    style: TextStyle(
-                                        color: selectedTab == 1
-                                            ? Colors.white
-                                            : Colors.white54,
-                                        fontWeight: FontWeight.bold)),
-                              ),
-                              GestureDetector(
-                                onTap: () => setState(() => selectedTab = 2),
-                                child: Text("Videos",
-                                    style: TextStyle(
-                                        color: selectedTab == 2
-                                            ? Colors.white
-                                            : Colors.white54,
-                                        fontWeight: FontWeight.bold)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Contenido dinámico
-                          Builder(
-                            builder: (context) {
-                              if (selectedTab == 0) return _buildThreadsTab();
-                              if (selectedTab == 1) return _buildPhotosTab();
-                              return _buildVideosTab();
-                            },
-                          ),
-                        ],
-                      ),
+                        // Contenido dinámico
+                        Builder(
+                          builder: (context) {
+                            if (selectedTab == 0) return _buildThreadsTab();
+                            if (selectedTab == 1) return _buildPhotosTab();
+                            return _buildVideosTab();
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        backgroundColor: const Color.fromRGBO(37, 21, 35, 0),
-        bottomNavigationBar: CurvedNavigationBar(
-          index: 1,
-          buttonBackgroundColor: const Color.fromRGBO(58, 27, 45, 1),
-          backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
-          color: const Color.fromRGBO(0, 0, 0, 1),
-          animationCurve: Curves.easeInOut,
-          animationDuration: const Duration(milliseconds: 300),
-          items: [
-            const Icon(Icons.public_rounded,
-                color: Color.fromRGBO(255, 239, 227, 0.7)),
-            SvgPicture.asset('assets/images/Logo.svg', height: 43, width: 43),
-            const Icon(Icons.chat, color: Color.fromRGBO(255, 239, 227, 0.7)),
-          ],
-        ),
+      ),
+      backgroundColor: const Color.fromRGBO(37, 21, 35, 0),
+      bottomNavigationBar: CurvedNavigationBar(
+        index: 1,
+        buttonBackgroundColor: const Color.fromRGBO(58, 27, 45, 1),
+        backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
+        color: const Color.fromRGBO(0, 0, 0, 1),
+        animationCurve: Curves.easeInOut,
+        animationDuration: const Duration(milliseconds: 300),
+        items: [
+          const Icon(Icons.public_rounded,
+              color: Color.fromRGBO(255, 239, 227, 0.7)),
+          SvgPicture.asset('assets/images/Logo.svg', height: 43, width: 43),
+          const Icon(Icons.chat, color: Color.fromRGBO(255, 239, 227, 0.7)),
+        ],
       ),
     );
   }
