@@ -1941,7 +1941,12 @@ class _ProfilePageState extends State<Profilepage> {
 
   // Lista de pasos del tutorial
   final List<Map<String, String>> tutorialSteps = [
-    {"title": "Crear Thread", "desc": "Escribe y publica tu primer Thread."},
+    {
+        "title": "Crear Thread", 
+        "desc": "Escribe y publica tu primer Thread.",
+        "imgSrc": "assets/images/thread_button.png",     // <-- Imagen 1 (Antes)
+        "imgSrc2": "assets/images/new_thread_screen.png" // <-- ¡Aquí está la Imagen 2 (Después)!
+    },
     {"title": "Subir Foto", "desc": "Agrega una foto a tu perfil."},
     {"title": "Subir Video", "desc": "Sube un video desde tu galería."},
     {"title": "Perfil", "desc": "Selecciona y actualiza tu foto de perfil."},
