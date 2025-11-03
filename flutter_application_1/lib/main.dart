@@ -16,6 +16,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'package:flutter/gestures.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'dart:async';
@@ -55,7 +56,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(MyApp());
+
+  runApp(
+    ShowCaseWidget(
+      builder: Builder(
+        builder: (context) => const MyApp(),
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -72,7 +80,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         ),
-        home: const HomeScreen(),
+        home: const SplashScreen(),
       ),
     );
   }
@@ -93,11 +101,16 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Espera 1 segundo y redirige automáticamente
     Future.delayed(const Duration(seconds: 1), () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const Profilepage()),
-      );
+      // 👇 Verifica que el widget siga montado antes de navegar
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Profilepage()),
+        );
+      }
     });
   }
 
@@ -1853,49 +1866,18 @@ class _PhotoUploadScreenState extends State<PhotoUploadScreen> {
   }
 }
 
-class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key});
+class Thread {
+  final String username;
+  final String content;
+  final DateTime timestamp;
+  Map<String, int> reactions = {"❤️": 0, "🔥": 0, "👏": 0};
+  List<String> comments = [];
 
-  @override
-  State<LoadingScreen> createState() => _LoadingScreenState();
-}
-
-class _LoadingScreenState extends State<LoadingScreen> {
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const Profilepage()),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color.fromRGBO(37, 22, 21, 80),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              'assets/images/loading.svg',
-              width: 150,
-              height: 150,
-            ),
-            const SizedBox(height: 20),
-            Image.asset(
-              'assets/images/vg.png',
-              width: 160,
-              height: 160,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Thread({
+    required this.username,
+    required this.content,
+    required this.timestamp,
+  });
 }
 
 class Profilepage extends StatefulWidget {
@@ -1905,25 +1887,39 @@ class Profilepage extends StatefulWidget {
   State<Profilepage> createState() => _ProfilePageState();
 }
 
-// ✅ Modelo de Thread con reacciones y comentarios
-class Thread {
-  final String username;
-  final String content;
-  final DateTime timestamp;
-  Map<String, int> reactions;
-  List<String> comments;
-
-  Thread({
-    required this.username,
-    required this.content,
-    required this.timestamp,
-    Map<String, int>? reactions,
-    List<String>? comments,
-  })  : reactions = reactions ?? {"👍": 0, "❤️": 0, "😂": 0},
-        comments = comments ?? [];
-}
-
 class _ProfilePageState extends State<Profilepage> {
+  OverlayEntry? _imagesOverlay;
+
+  void _showImagesOverlay() {
+    if (_imagesOverlay != null) return;
+
+    _imagesOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 120,
+        left: 0,
+        right: 0,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/images/vg1.png', width: 120, height: 120),
+              const SizedBox(width: 20),
+              Image.asset('assets/images/vg2.png', width: 120, height: 120),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_imagesOverlay!);
+  }
+
+  void _removeImagesOverlay() {
+    _imagesOverlay?.remove();
+    _imagesOverlay = null;
+  }
+
   File? _profileImage;
   File? _coverImage;
   final ImagePicker _picker = ImagePicker();
@@ -1935,22 +1931,12 @@ class _ProfilePageState extends State<Profilepage> {
   TextEditingController threadController = TextEditingController();
   Timer? _timer;
 
-  // 🔹 Tutorial state
-  int _currentStep = 0;
-  OverlayEntry? _tutorialOverlay;
-
-  // Lista de pasos del tutorial
-  final List<Map<String, String>> tutorialSteps = [
-    {
-        "title": "Crear Thread", 
-        "desc": "Escribe y publica tu primer Thread.",
-        "imgSrc": "assets/images/thread_button.png",     // <-- Imagen 1 (Antes)
-        "imgSrc2": "assets/images/new_thread_screen.png" // <-- ¡Aquí está la Imagen 2 (Después)!
-    },
-    {"title": "Subir Foto", "desc": "Agrega una foto a tu perfil."},
-    {"title": "Subir Video", "desc": "Sube un video desde tu galería."},
-    {"title": "Perfil", "desc": "Selecciona y actualiza tu foto de perfil."},
-  ];
+  // Showcase keys
+  final GlobalKey _threadsKey = GlobalKey();
+  final GlobalKey _photosKey = GlobalKey();
+  final GlobalKey _videosKey = GlobalKey();
+  bool _isShowcaseActive = false;
+  bool _showFab = true;
 
   // Formato de tiempo relativo
   String timeAgo(DateTime date) {
@@ -1965,80 +1951,15 @@ class _ProfilePageState extends State<Profilepage> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      setState(() {}); // refrescar "time ago"
+      setState(() {});
     });
-    Future.delayed(const Duration(milliseconds: 500), _startTutorial);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     threadController.dispose();
-    _removeTutorial();
     super.dispose();
-  }
-
-  // Tutorial functions
-  void _startTutorial() {
-    _currentStep = 0;
-    _showStep();
-  }
-
-  void _nextStep() {
-    _removeTutorial();
-    if (_currentStep < tutorialSteps.length - 1) {
-      _currentStep++;
-      _showStep();
-    }
-  }
-
-  void _removeTutorial() {
-    _tutorialOverlay?.remove();
-    _tutorialOverlay = null;
-  }
-
-  void _showStep() {
-    _tutorialOverlay = OverlayEntry(
-      builder: (context) {
-        return Positioned.fill(
-          child: Material(
-            color: Colors.black54,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                margin: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      tutorialSteps[_currentStep]["title"]!,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(tutorialSteps[_currentStep]["desc"]!),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _nextStep,
-                      child: Text(
-                          _currentStep == tutorialSteps.length - 1
-                              ? "Finalizar"
-                              : "Siguiente",
-                          style: const TextStyle(fontSize: 16)),
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-    Overlay.of(context).insert(_tutorialOverlay!);
   }
 
   // Pickers
@@ -2275,199 +2196,266 @@ class _ProfilePageState extends State<Profilepage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/BaseBackground.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: NestedScrollView(
-          floatHeaderSlivers: true,
-          headerSliverBuilder: (context, innerBoxIsScrolled) => [
-            const SliverAppBar(
-              floating: true,
-              snap: true,
-              title: Text("ישוע"),
-              centerTitle: true,
-              actions: [
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 25),
-                  child: Icon(Icons.account_circle_rounded,
-                      color: Color.fromRGBO(255, 239, 227, 1)),
-                ),
-              ],
-              backgroundColor: Color.fromRGBO(37, 21, 22, 1),
-              titleTextStyle: TextStyle(
-                color: Color.fromRGBO(255, 239, 227, 0.7),
-                fontWeight: FontWeight.bold,
+    return ShowCaseWidget(
+      builder: Builder(
+        builder: (context) => Scaffold(
+          extendBody: true,
+          body: Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/BaseBackground.png'),
+                fit: BoxFit.cover,
               ),
             ),
-          ],
-          body: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.topCenter,
-            children: [
-              // Portada
-              Positioned(
-                right: 0,
-                left: 0,
-                top: 0,
-                child: Stack(
-                  children: [
-                    Container(
-                      height: 340,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color.fromRGBO(7, 7, 7, 1),
-                        image: _coverImage != null
-                            ? DecorationImage(
-                                image: FileImage(_coverImage!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: _coverImage == null
-                          ? const Center(
-                              child: Icon(Icons.photo,
-                                  size: 80, color: Colors.white30),
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Material(
-                        color: Colors.black45,
-                        shape: const CircleBorder(),
-                        child: IconButton(
-                          tooltip: 'Cambiar portada',
-                          icon:
-                              const Icon(Icons.camera_alt, color: Colors.white),
-                          onPressed: _pickCoverImage,
-                        ),
-                      ),
+            child: NestedScrollView(
+              floatHeaderSlivers: true,
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                const SliverAppBar(
+                  floating: true,
+                  snap: true,
+                  title: Text("ישוע"),
+                  centerTitle: true,
+                  actions: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 25),
+                      child: Icon(Icons.account_circle_rounded,
+                          color: Color.fromRGBO(255, 239, 227, 1)),
                     ),
                   ],
-                ),
-              ),
-              // Tarjeta vinotinto con scroll
-              Positioned(
-                top: 250,
-                right: 0,
-                left: 0,
-                child: Container(
-                  height: 290,
-                  margin: const EdgeInsets.symmetric(horizontal: 25),
-                  padding: const EdgeInsets.all(15),
-                  decoration: const BoxDecoration(
-                    color: Color.fromRGBO(37, 21, 22, 1),
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  backgroundColor: Color.fromRGBO(37, 21, 22, 1),
+                  titleTextStyle: TextStyle(
+                    color: Color.fromRGBO(255, 239, 227, 0.7),
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                ),
+              ],
+              body: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.topCenter,
+                children: [
+                  // Portada
+                  Positioned(
+                    right: 0,
+                    left: 0,
+                    top: 0,
+                    child: Stack(
                       children: [
-                        const SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: _pickProfileImage,
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.grey.shade800,
-                            backgroundImage: _profileImage != null
-                                ? FileImage(_profileImage!)
-                                : null,
-                            child: _profileImage == null
-                                ? const Icon(Icons.person,
-                                    size: 50, color: Colors.white70)
+                        Container(
+                          height: 340,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(7, 7, 7, 1),
+                            image: _coverImage != null
+                                ? DecorationImage(
+                                    image: FileImage(_coverImage!),
+                                    fit: BoxFit.cover,
+                                  )
                                 : null,
                           ),
+                          child: _coverImage == null
+                              ? const Center(
+                                  child: Icon(Icons.photo,
+                                      size: 80, color: Colors.white30),
+                                )
+                              : null,
                         ),
-                        const SizedBox(height: 12),
-                        const Text("Edward Kenway",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18)),
-                        const SizedBox(height: 5),
-                        const Text("Saggitarius, Escorpios, Cancer",
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 14)),
-                        const SizedBox(height: 5),
-                        const Text("Professional Looter",
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 14)),
-                        const SizedBox(height: 20),
-
-                        // Menú manual
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            GestureDetector(
-                              onTap: () => setState(() => selectedTab = 0),
-                              child: Text("Threads",
-                                  style: TextStyle(
-                                      color: selectedTab == 0
-                                          ? Colors.white
-                                          : Colors.white54,
-                                      fontWeight: FontWeight.bold)),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Material(
+                            color: Colors.black45,
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              tooltip: 'Cambiar portada',
+                              icon: const Icon(Icons.camera_alt,
+                                  color: Colors.white),
+                              onPressed: _pickCoverImage,
                             ),
-                            GestureDetector(
-                              onTap: () => setState(() => selectedTab = 1),
-                              child: Text("Photos",
-                                  style: TextStyle(
-                                      color: selectedTab == 1
-                                          ? Colors.white
-                                          : Colors.white54,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            GestureDetector(
-                              onTap: () => setState(() => selectedTab = 2),
-                              child: Text("Videos",
-                                  style: TextStyle(
-                                      color: selectedTab == 2
-                                          ? Colors.white
-                                          : Colors.white54,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Contenido dinámico
-                        Builder(
-                          builder: (context) {
-                            if (selectedTab == 0) return _buildThreadsTab();
-                            if (selectedTab == 1) return _buildPhotosTab();
-                            return _buildVideosTab();
-                          },
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
+
+                  // Tarjeta vinotinto con scroll
+                  Positioned(
+                    top: 250,
+                    right: 0,
+                    left: 0,
+                    child: Container(
+                      height: 290,
+                      margin: const EdgeInsets.symmetric(horizontal: 25),
+                      padding: const EdgeInsets.all(15),
+                      decoration: const BoxDecoration(
+                        color: Color.fromRGBO(37, 21, 22, 1),
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 20),
+                            GestureDetector(
+                              onTap: _pickProfileImage,
+                              child: CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.grey.shade800,
+                                backgroundImage: _profileImage != null
+                                    ? FileImage(_profileImage!)
+                                    : null,
+                                child: _profileImage == null
+                                    ? const Icon(Icons.person,
+                                        size: 50, color: Colors.white70)
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text("Edward Kenway",
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18)),
+                            const SizedBox(height: 5),
+                            const Text("Saggitarius, Escorpios, Cancer",
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 14)),
+                            const SizedBox(height: 5),
+                            const Text("Professional Looter",
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 14)),
+                            const SizedBox(height: 20),
+
+                            // Menú manual
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Showcase(
+                                  key: _threadsKey,
+                                  description: "Write your thread 🧵",
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        setState(() => selectedTab = 0),
+                                    child: Text("Threads",
+                                        style: TextStyle(
+                                            color: selectedTab == 0
+                                                ? Colors.white
+                                                : Colors.white54,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                Showcase(
+                                  key: _photosKey,
+                                  description: "Upload your pics 📸",
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        setState(() => selectedTab = 1),
+                                    child: Text("Photos",
+                                        style: TextStyle(
+                                            color: selectedTab == 1
+                                                ? Colors.white
+                                                : Colors.white54,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                Showcase(
+                                  key: _videosKey,
+                                  description: "Share your videos 🎥",
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        setState(() => selectedTab = 2),
+                                    child: Text("Videos",
+                                        style: TextStyle(
+                                            color: selectedTab == 2
+                                                ? Colors.white
+                                                : Colors.white54,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Contenido dinámico
+                            Builder(
+                              builder: (context) {
+                                if (selectedTab == 0) return _buildThreadsTab();
+                                if (selectedTab == 1) return _buildPhotosTab();
+                                return _buildVideosTab();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Floating Action Button con Showcase
+                  if (_showFab)
+                    Positioned(
+                        top: 10,
+                        left: 20,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: const Color.fromRGBO(58, 27, 45, 1),
+                          child:
+                              const Icon(Icons.play_arrow, color: Colors.white),
+                          onPressed: () {
+                            final showcase = ShowCaseWidget.of(context);
+
+                            // 🔹 Elimina las imágenes del overlay si hay alguna visible
+                            _removeImagesOverlay();
+
+                            if (showcase != null) {
+                              setState(() {
+                                _isShowcaseActive =
+                                    true; // Activa las imágenes del tutorial
+                              });
+
+                              // 🔹 Inicia el recorrido del Showcase
+                              showcase.startShowCase([
+                                _threadsKey,
+                                _photosKey,
+                                _videosKey,
+                              ]);
+
+                              // 🔹 Oculta las imágenes después de unos segundos o al finalizar el tutorial
+                              Future.delayed(const Duration(seconds: 3), () {
+                                if (mounted) {
+                                  setState(() {
+                                    _isShowcaseActive = false;
+                                  });
+                                  _removeImagesOverlay(); // 👈 Limpia completamente el overlay
+                                }
+                              });
+                            }
+                          },
+                        )),
+
+                  // Imágenes del tutorial
+                  if (_isShowcaseActive) ...[],
+                ],
               ),
+            ),
+          ),
+          backgroundColor: const Color.fromRGBO(37, 21, 35, 0),
+          bottomNavigationBar: CurvedNavigationBar(
+            index: 1,
+            buttonBackgroundColor: const Color.fromRGBO(58, 27, 45, 1),
+            backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
+            color: const Color.fromRGBO(0, 0, 0, 1),
+            animationCurve: Curves.easeInOut,
+            animationDuration: const Duration(milliseconds: 300),
+            items: [
+              const Icon(Icons.public_rounded,
+                  color: Color.fromRGBO(255, 239, 227, 0.7)),
+              SvgPicture.asset('assets/images/Logo.svg', height: 43, width: 43),
+              const Icon(Icons.chat, color: Color.fromRGBO(255, 239, 227, 0.7)),
             ],
           ),
         ),
       ),
-      backgroundColor: const Color.fromRGBO(37, 21, 35, 0),
-      bottomNavigationBar: CurvedNavigationBar(
-        index: 1,
-        buttonBackgroundColor: const Color.fromRGBO(58, 27, 45, 1),
-        backgroundColor: const Color.fromRGBO(0, 0, 0, 0),
-        color: const Color.fromRGBO(0, 0, 0, 1),
-        animationCurve: Curves.easeInOut,
-        animationDuration: const Duration(milliseconds: 300),
-        items: [
-          const Icon(Icons.public_rounded,
-              color: Color.fromRGBO(255, 239, 227, 0.7)),
-          SvgPicture.asset('assets/images/Logo.svg', height: 43, width: 43),
-          const Icon(Icons.chat, color: Color.fromRGBO(255, 239, 227, 0.7)),
-        ],
-      ),
     );
   }
 }
+
+
