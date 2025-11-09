@@ -1932,9 +1932,13 @@ class _ProfilePageState extends State<Profilepage> {
   Timer? _timer;
 
   // Showcase keys
+  final GlobalKey _pfpKey = GlobalKey();
+  final GlobalKey _profileIconKey = GlobalKey();
+  final GlobalKey _iconKey = GlobalKey();
   final GlobalKey _threadsKey = GlobalKey();
   final GlobalKey _photosKey = GlobalKey();
   final GlobalKey _videosKey = GlobalKey();
+
   bool _isShowcaseActive = false;
   bool _showFab = true;
 
@@ -2210,16 +2214,25 @@ class _ProfilePageState extends State<Profilepage> {
             child: NestedScrollView(
               floatHeaderSlivers: true,
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                const SliverAppBar(
+                SliverAppBar(
                   floating: true,
                   snap: true,
                   title: Text("ישוע"),
                   centerTitle: true,
                   actions: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 25),
-                      child: Icon(Icons.account_circle_rounded,
-                          color: Color.fromRGBO(255, 239, 227, 1)),
+                    Showcase(
+                      key: _profileIconKey, // GlobalKey genérica
+                      description: "Tap here to view your profile 📝",
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 25),
+                        child: IconButton(
+                          icon: Icon(Icons.account_circle_rounded,
+                              color: Color.fromRGBO(255, 239, 227, 1)),
+                          onPressed: () {
+                            // acción opcional al tocar el icono
+                          },
+                        ),
+                      ),
                     ),
                   ],
                   backgroundColor: Color.fromRGBO(37, 21, 22, 1),
@@ -2253,9 +2266,14 @@ class _ProfilePageState extends State<Profilepage> {
                                 : null,
                           ),
                           child: _coverImage == null
-                              ? const Center(
-                                  child: Icon(Icons.photo,
-                                      size: 80, color: Colors.white30),
+                              ? Center(
+                                  child: Showcase(
+                                    key: _pfpKey,
+                                    description:
+                                        "Tap here to add a cover image 📸",
+                                    child: Icon(Icons.photo,
+                                        size: 80, color: Colors.white30),
+                                  ),
                                 )
                               : null,
                         ),
@@ -2295,18 +2313,23 @@ class _ProfilePageState extends State<Profilepage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             const SizedBox(height: 20),
-                            GestureDetector(
-                              onTap: _pickProfileImage,
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.grey.shade800,
-                                backgroundImage: _profileImage != null
-                                    ? FileImage(_profileImage!)
-                                    : null,
-                                child: _profileImage == null
-                                    ? const Icon(Icons.person,
-                                        size: 50, color: Colors.white70)
-                                    : null,
+                            Showcase(
+                              key: _iconKey,
+                              description: "Change your profile picture 📝",
+                              child: GestureDetector(
+                                onTap:
+                                    _pickProfileImage, // opcional: acción al tocar
+                                child: CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Colors.grey.shade800,
+                                  backgroundImage: _profileImage != null
+                                      ? FileImage(_profileImage!)
+                                      : null,
+                                  child: _profileImage == null
+                                      ? Icon(Icons.person,
+                                          size: 50, color: Colors.white70)
+                                      : null,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -2326,12 +2349,17 @@ class _ProfilePageState extends State<Profilepage> {
                             const SizedBox(height: 20),
 
                             // Menú manual
+
+                            //Delayed 1- 1:30 (logo) "All set. Explore!" ()
+                            //remove content//
+                            //floating action button middle center, big "Tap here to start tutorial (Aprox. 30)"
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 Showcase(
                                   key: _threadsKey,
-                                  description: "Write your thread 🧵",
+                                  description:
+                                      "Write your thoughts and opinions 🧵", //TEMP
                                   child: GestureDetector(
                                     onTap: () =>
                                         setState(() => selectedTab = 0),
@@ -2345,7 +2373,7 @@ class _ProfilePageState extends State<Profilepage> {
                                 ),
                                 Showcase(
                                   key: _photosKey,
-                                  description: "Upload your pics 📸",
+                                  description: "Share photos 📸",
                                   child: GestureDetector(
                                     onTap: () =>
                                         setState(() => selectedTab = 1),
@@ -2359,7 +2387,7 @@ class _ProfilePageState extends State<Profilepage> {
                                 ),
                                 Showcase(
                                   key: _videosKey,
-                                  description: "Share your videos 🎥",
+                                  description: "Share videos 🎥",
                                   child: GestureDetector(
                                     onTap: () =>
                                         setState(() => selectedTab = 2),
@@ -2392,44 +2420,55 @@ class _ProfilePageState extends State<Profilepage> {
                   // Floating Action Button con Showcase
                   if (_showFab)
                     Positioned(
-                        top: 10,
-                        left: 20,
+                      top: MediaQuery.of(context).size.height / 2 -
+                          40, // centra vertical (80 / 2)
+                      left: MediaQuery.of(context).size.width / 2 -
+                          40, // centra horizontal (80 / 2)
+                      child: SizedBox(
+                        width: 80,
+                        height: 80,
                         child: FloatingActionButton(
-                          mini: true,
                           backgroundColor: const Color.fromRGBO(58, 27, 45, 1),
-                          child:
-                              const Icon(Icons.play_arrow, color: Colors.white),
+                          child: const Icon(Icons.play_arrow,
+                              color: Colors.white, size: 40),
                           onPressed: () {
                             final showcase = ShowCaseWidget.of(context);
 
-                            // 🔹 Elimina las imágenes del overlay si hay alguna visible
+                            // 🔹 Muestra las imágenes del tutorial si las hay
                             _removeImagesOverlay();
 
                             if (showcase != null) {
                               setState(() {
-                                _isShowcaseActive =
-                                    true; // Activa las imágenes del tutorial
+                                _isShowcaseActive = true;
+                                _showFab =
+                                    false; // desaparece el FAB al iniciar
                               });
 
                               // 🔹 Inicia el recorrido del Showcase
                               showcase.startShowCase([
+                                _profileIconKey,
+                                _pfpKey,
+                                _iconKey,
                                 _threadsKey,
                                 _photosKey,
                                 _videosKey,
                               ]);
 
-                              // 🔹 Oculta las imágenes después de unos segundos o al finalizar el tutorial
+                              // 🔹 Oculta las imágenes después de unos segundos o al finalizar
                               Future.delayed(const Duration(seconds: 3), () {
                                 if (mounted) {
                                   setState(() {
                                     _isShowcaseActive = false;
+                                    // _showFab ya está false, no vuelve a aparecer
                                   });
-                                  _removeImagesOverlay(); // 👈 Limpia completamente el overlay
+                                  _removeImagesOverlay();
                                 }
                               });
                             }
                           },
-                        )),
+                        ),
+                      ),
+                    ),
 
                   // Imágenes del tutorial
                   if (_isShowcaseActive) ...[],
@@ -2457,5 +2496,6 @@ class _ProfilePageState extends State<Profilepage> {
     );
   }
 }
+
 
 
