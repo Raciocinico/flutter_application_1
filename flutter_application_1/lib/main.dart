@@ -2197,7 +2197,7 @@ class _ProfilePageState extends State<Profilepage> {
       ],
     );
   }
-
+// Instead play button, text 
   @override
   Widget build(BuildContext context) {
     return ShowCaseWidget(
@@ -2222,7 +2222,7 @@ class _ProfilePageState extends State<Profilepage> {
                   actions: [
                     Showcase(
                       key: _profileIconKey, // GlobalKey genérica
-                      description: "Tap here to view your profile 📝",
+                      description: "Edit everything later here 📝",
                       child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 25),
                         child: IconButton(
@@ -2352,7 +2352,7 @@ class _ProfilePageState extends State<Profilepage> {
 
                             //Delayed 1- 1:30 (logo) "All set. Explore!" ()
                             //remove content//
-                            //floating action button middle center, big "Tap here to start tutorial (Aprox. 30)"
+                            //floating action button middle center, big "Tap here to start tutorial (Aprox. 20)"
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
@@ -2496,6 +2496,7 @@ class _ProfilePageState extends State<Profilepage> {
     );
   }
 }
+
 
 
 
