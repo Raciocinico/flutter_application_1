@@ -1932,6 +1932,7 @@ class _ProfilePageState extends State<Profilepage> {
   Timer? _timer;
 
   // Showcase keys
+  final GlobalKey _fabKey = GlobalKey();
   final GlobalKey _pfpKey = GlobalKey();
   final GlobalKey _profileIconKey = GlobalKey();
   final GlobalKey _iconKey = GlobalKey();
@@ -2061,6 +2062,8 @@ class _ProfilePageState extends State<Profilepage> {
             ],
           ),
         ),
+
+        // 🔹 LISTA DE THREADS
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -2068,64 +2071,126 @@ class _ProfilePageState extends State<Profilepage> {
           itemBuilder: (context, index) {
             final thread = threads[index];
             final commentController = TextEditingController();
-            return Card(
-              color: const Color.fromRGBO(58, 27, 45, 1),
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(thread.username,
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 5),
-                    Text(thread.content,
-                        style: const TextStyle(color: Colors.white)),
-                    const SizedBox(height: 5),
-                    Text(timeAgo(thread.timestamp),
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
-                    const SizedBox(height: 10),
-                    _buildReactions(thread),
-                    const Divider(color: Colors.white24),
-                    Column(
-                      children: thread.comments
-                          .map((c) => Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text("- $c",
-                                    style:
-                                        const TextStyle(color: Colors.white)),
-                              ))
-                          .toList(),
-                    ),
-                    Row(
+
+            return Stack(
+              children: [
+                // 📌 CARD DEL THREAD
+                Card(
+                  color: const Color.fromRGBO(58, 27, 45, 1),
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: commentController,
-                            decoration: const InputDecoration(
-                              hintText: "Write a comment...",
-                              hintStyle: TextStyle(color: Colors.white54),
-                              border: InputBorder.none,
+                        Text(thread.username,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 5),
+                        Text(thread.content,
+                            style: const TextStyle(color: Colors.white)),
+                        const SizedBox(height: 5),
+                        Text(timeAgo(thread.timestamp),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12)),
+                        const SizedBox(height: 10),
+                        _buildReactions(thread),
+
+                        const Divider(color: Colors.white24),
+
+                        // 📌 Comentarios
+                        Column(
+                          children:
+                              thread.comments.asMap().entries.map((entry) {
+                            final commentIndex = entry.key;
+                            final commentText = entry.value;
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    "- $commentText",
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                ),
+
+                                // ❌ Botón eliminar comentario
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      thread.comments.removeAt(commentIndex);
+                                    });
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.only(left: 8.0, top: 2),
+                                    child: Icon(Icons.close,
+                                        color: Colors.white54, size: 18),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+
+                        // 📌 Caja de texto para comentar
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: commentController,
+                                decoration: const InputDecoration(
+                                  hintText: "Write a comment...",
+                                  hintStyle: TextStyle(color: Colors.white54),
+                                  border: InputBorder.none,
+                                ),
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.send, color: Colors.white70),
-                          onPressed: () {
-                            if (commentController.text.isNotEmpty) {
-                              _addComment(thread, commentController.text);
-                              commentController.clear();
-                            }
-                          },
-                        ),
+                            IconButton(
+                              icon:
+                                  const Icon(Icons.send, color: Colors.white70),
+                              onPressed: () {
+                                if (commentController.text.isNotEmpty) {
+                                  _addComment(thread, commentController.text);
+                                  commentController.clear();
+                                }
+                              },
+                            ),
+                          ],
+                        )
                       ],
-                    )
-                  ],
+                    ),
+                  ),
                 ),
-              ),
+
+                // ❌ BOTÓN DE ELIMINAR (ARRIBA DERECHA)
+                Positioned(
+                  right: 20,
+                  top: 20,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        threads.removeAt(index);
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -2149,17 +2214,47 @@ class _ProfilePageState extends State<Profilepage> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _photos.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    height: 500,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.black26,
-                      image: DecorationImage(
-                        image: FileImage(_photos[index]),
-                        fit: BoxFit.cover,
+                  return Stack(
+                    children: [
+                      // 📸 Foto
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        height: 500,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.black26,
+                          image: DecorationImage(
+                            image: FileImage(_photos[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                    ),
+
+                      // ❌ Botón eliminar
+                      Positioned(
+                        top: 15,
+                        right: 15,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _photos.removeAt(index);
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -2197,7 +2292,8 @@ class _ProfilePageState extends State<Profilepage> {
       ],
     );
   }
-// Instead play button, text 
+
+// Instead play button, text
   @override
   Widget build(BuildContext context) {
     return ShowCaseWidget(
@@ -2420,58 +2516,50 @@ class _ProfilePageState extends State<Profilepage> {
                   // Floating Action Button con Showcase
                   if (_showFab)
                     Positioned(
-                      top: MediaQuery.of(context).size.height / 2 -
-                          40, // centra vertical (80 / 2)
-                      left: MediaQuery.of(context).size.width / 2 -
-                          40, // centra horizontal (80 / 2)
-                      child: SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: FloatingActionButton(
-                          backgroundColor: const Color.fromRGBO(58, 27, 45, 1),
-                          child: const Icon(Icons.play_arrow,
-                              color: Colors.white, size: 40),
-                          onPressed: () {
-                            final showcase = ShowCaseWidget.of(context);
+                      top: MediaQuery.of(context).size.height / 2 - 40,
+                      left: MediaQuery.of(context).size.width / 2 - 40,
+                      child: Showcase(
+                        key: _fabKey,
+                        description:
+                            "Tap here to start tutorial (Approx. 20 seconds)",
+                        child: SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: FloatingActionButton(
+                            backgroundColor:
+                                const Color.fromRGBO(58, 27, 45, 1),
+                            child: const Icon(Icons.play_arrow,
+                                color: Colors.white, size: 40),
+                            onPressed: () {
+                              final showcase = ShowCaseWidget.of(context);
 
-                            // 🔹 Muestra las imágenes del tutorial si las hay
-                            _removeImagesOverlay();
-
-                            if (showcase != null) {
+                              // IMPORTANTE: NO quites el FAB antes del layout
                               setState(() {
-                                _isShowcaseActive = true;
-                                _showFab =
-                                    false; // desaparece el FAB al iniciar
+                                _isShowcaseActive = false;
+                                // NO _showFab = false AQUÍ
                               });
 
-                              // 🔹 Inicia el recorrido del Showcase
-                              showcase.startShowCase([
-                                _profileIconKey,
-                                _pfpKey,
-                                _iconKey,
-                                _threadsKey,
-                                _photosKey,
-                                _videosKey,
-                              ]);
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                showcase.startShowCase([
+                                  _fabKey,
+                                  _profileIconKey,
+                                  _pfpKey,
+                                  _iconKey,
+                                  _threadsKey,
+                                  _photosKey,
+                                  _videosKey,
+                                ]);
 
-                              // 🔹 Oculta las imágenes después de unos segundos o al finalizar
-                              Future.delayed(const Duration(seconds: 3), () {
-                                if (mounted) {
-                                  setState(() {
-                                    _isShowcaseActive = false;
-                                    // _showFab ya está false, no vuelve a aparecer
-                                  });
-                                  _removeImagesOverlay();
-                                }
+                                Future.delayed(const Duration(seconds: 3), () {
+                                  if (!mounted) return;
+                                  setState(() => _showFab = false);
+                                });
                               });
-                            }
-                          },
+                            },
+                          ),
                         ),
                       ),
-                    ),
-
-                  // Imágenes del tutorial
-                  if (_isShowcaseActive) ...[],
+                    )
                 ],
               ),
             ),
@@ -2496,6 +2584,7 @@ class _ProfilePageState extends State<Profilepage> {
     );
   }
 }
+
 
 
 
